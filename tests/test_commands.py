@@ -13,7 +13,7 @@ from borgpull.config import (
     SourcesConfig,
     SshConfig,
 )
-from borgpull.commands import _archive_name, create, prune, check, init, run_all
+from borgpull.commands import _archive_name, compact, create, prune, check, init, run_all
 
 
 @pytest.fixture()
@@ -113,6 +113,13 @@ class TestPrune:
         mock_borg.assert_not_called()
 
 
+class TestCompact:
+    @patch("borgpull.commands.run_borg")
+    def test_runs_compact(self, mock_borg, config):
+        compact(config, dry_run=True)
+        assert mock_borg.call_args[0][1] == ["compact", config.borg.repo]
+
+
 class TestCheck:
     @patch("borgpull.commands.run_borg")
     def test_runs_each_check_type(self, mock_borg, config):
@@ -132,17 +139,21 @@ class TestInit:
 
 class TestRunAll:
     @patch("borgpull.commands.check")
+    @patch("borgpull.commands.compact")
     @patch("borgpull.commands.prune")
     @patch("borgpull.commands.create")
-    def test_calls_create_prune_check(self, mock_create, mock_prune, mock_check, config):
+    def test_calls_create_prune_compact_check(self, mock_create, mock_prune, mock_compact, mock_check, config):
         run_all(config, dry_run=True)
         mock_create.assert_called_once_with(config, dry_run=True)
         mock_prune.assert_called_once_with(config, dry_run=True)
+        mock_compact.assert_called_once_with(config, dry_run=True)
         mock_check.assert_called_once_with(config, dry_run=True)
 
     @patch("borgpull.commands.check")
+    @patch("borgpull.commands.compact")
     @patch("borgpull.commands.prune", side_effect=Exception("prune failed"))
     @patch("borgpull.commands.create")
-    def test_continues_to_check_if_prune_fails(self, mock_create, mock_prune, mock_check, config):
+    def test_continues_to_check_if_prune_fails(self, mock_create, mock_prune, mock_compact, mock_check, config):
         run_all(config, dry_run=True)
+        mock_compact.assert_called_once()
         mock_check.assert_called_once()

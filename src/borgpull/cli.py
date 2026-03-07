@@ -5,7 +5,7 @@ import logging
 import sys
 
 from borgpull import __version__
-from borgpull.commands import check, create, info, init, list_archives, prune, run_all
+from borgpull.commands import check, compact, create, info, init, list_archives, prune, run_all
 from borgpull.config import ConfigError, load_config
 
 log = logging.getLogger("borgpull")
@@ -32,6 +32,7 @@ def _build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command")
     sub.add_parser("create", help="run hooks + borg create")
     sub.add_parser("prune", help="borg prune")
+    sub.add_parser("compact", help="borg compact")
     sub.add_parser("check", help="borg check")
     sub.add_parser("list", help="borg list")
     sub.add_parser("info", help="borg info")
@@ -43,6 +44,7 @@ def _build_parser() -> argparse.ArgumentParser:
 COMMANDS = {
     "create": lambda cfg, dr: create(cfg, dry_run=dr),
     "prune": lambda cfg, dr: prune(cfg, dry_run=dr),
+    "compact": lambda cfg, dr: compact(cfg, dry_run=dr),
     "check": lambda cfg, dr: check(cfg, dry_run=dr),
     "list": lambda cfg, dr: list_archives(cfg, dry_run=dr),
     "info": lambda cfg, dr: info(cfg, dry_run=dr),

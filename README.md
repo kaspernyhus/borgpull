@@ -47,12 +47,13 @@ borgpull searches for config in this order:
 ## Usage
 
 ```sh
-# full cycle: hooks + create + prune + check
+# full cycle: hooks + create + prune + compact + check
 borgpull
 
 # individual commands
 borgpull create
 borgpull prune
+borgpull compact
 borgpull check
 borgpull list
 borgpull info
@@ -71,7 +72,8 @@ When running the full cycle (`borgpull` with no subcommand):
 - **before_create hook fails** — abort, but still run after_create hooks for cleanup
 - **borg create fails** — abort, but still run after_create hooks for cleanup
 - **after_create hook fails** — log warning, continue to prune
-- **prune fails** — log error, continue to check
+- **prune fails** — log error, continue to compact
+- **compact fails** — log error, continue to check
 - **check fails** — log error
 
 ## Docs

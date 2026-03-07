@@ -68,6 +68,10 @@ def prune(config: Config, *, dry_run: bool = False) -> None:
     run_borg(config, args, dry_run=dry_run)
 
 
+def compact(config: Config, *, dry_run: bool = False) -> None:
+    run_borg(config, ["compact", config.borg.repo], dry_run=dry_run)
+
+
 def check(config: Config, *, dry_run: bool = False) -> None:
     for check_type in config.checks.enabled:
         args = ["check", f"--{check_type}-only", config.borg.repo]
@@ -93,7 +97,12 @@ def run_all(config: Config, *, dry_run: bool = False) -> None:
     try:
         prune(config, dry_run=dry_run)
     except Exception:
-        log.error("prune failed, continuing to check")
+        log.error("prune failed, continuing to compact")
+
+    try:
+        compact(config, dry_run=dry_run)
+    except Exception:
+        log.error("compact failed, continuing to check")
 
     try:
         check(config, dry_run=dry_run)
