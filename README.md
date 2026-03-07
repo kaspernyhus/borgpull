@@ -6,15 +6,6 @@ borgmatic assumes borg runs locally. borgpull flips that — it SSHes into a rem
 
 ## How it works
 
-```
-borgpull (backup server)        Remote host (e.g. Hetzner VPS)
-────────────────────            ──────────────────────────────
-borgpull CLI                    sudo -E borg create ...
-  └─ SSH -R sock:sock ──────►    └─ BORG_RSH="sh -c 'exec nc -U <sock>'"
-       └─ borg serve                   (reverse tunnel back to local repo)
-            └─ /vps-backups/
-```
-
 For each command, borgpull:
 
 1. Opens an SSH connection with `-R <socket>:<socket>` to forward a Unix socket back to the local `borg serve`
@@ -52,46 +43,6 @@ borgpull searches for config in this order:
 2. `./borgpull.toml`
 3. `~/.config/borgpull/config.toml`
 4. `/etc/borgpull/config.toml`
-
-### Config reference
-
-```toml
-[ssh]
-host = "hetzner"                    # required — SSH alias or IP
-user = "root"                       # default: "root"
-identity_file = "~/.ssh/borgmatic"  # optional
-port = 22                           # optional
-
-[borg]
-repo = "ssh://borgbackup/vps-backups/myapp"  # required
-socket_path = "/run/borg/hetzner.sock"       # required
-encryption = "none"                 # default: "none" (only used by init)
-compression = "lz4"                 # default: "lz4"
-archive_name_format = "{hostname}-{now:%Y-%m-%dT%H:%M:%S}"  # default
-
-[sources]
-paths = [                           # required
-    "/data/app",
-    "/tmp/backup.sqlite3",
-]
-
-[hooks]
-before_create = [                   # optional — run on remote before borg create
-    "sudo sqlite3 /data/app.db '.backup /tmp/backup.sqlite3'",
-]
-after_create = [                    # optional — run on remote after borg create
-    "sudo rm -f /tmp/backup.sqlite3",
-]
-
-[retention]
-keep_daily = 7                      # all optional
-keep_weekly = 4
-keep_monthly = 6
-keep_yearly = 0
-
-[checks]
-enabled = ["repository"]            # default: ["repository"]
-```
 
 ## Usage
 
