@@ -1,0 +1,34 @@
+[ssh]
+host = "hetzner"                    # SSH alias or IP address
+user = "root"                       # default: "root"
+# identity_file = "~/.ssh/borgmatic"
+# port = 22
+
+[borg]
+repo = "ssh://borgbackup/vps-backups/caprover-django-apps"
+socket_path = "/run/borg/hetzner.sock"
+encryption = "none"                 # only used by `borgpull init`
+compression = "lz4"                 # default: "lz4"
+
+[sources]
+paths = [
+    "/captain/data/config-captain",
+    "/captain/data/nginx-shared",
+    "/tmp/backup.sqlite3",
+]
+
+[hooks]
+before_create = [
+    "sudo sqlite3 /captain/data/caprover.sqlite3 '.backup /tmp/backup.sqlite3'",
+]
+after_create = [
+    "sudo rm -f /tmp/backup.sqlite3",
+]
+
+[retention]
+keep_daily = 7
+keep_weekly = 4
+keep_monthly = 6
+
+[checks]
+enabled = ["repository"]
