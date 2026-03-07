@@ -67,6 +67,7 @@ repo = "ssh://borgbackup/vps-backups/myapp"  # required
 socket_path = "/run/borg/hetzner.sock"       # required
 encryption = "none"                 # default: "none" (only used by init)
 compression = "lz4"                 # default: "lz4"
+archive_name_format = "{hostname}-{now:%Y-%m-%dT%H:%M:%S}"  # default
 
 [sources]
 paths = [                           # required

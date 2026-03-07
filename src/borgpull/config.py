@@ -23,6 +23,7 @@ class BorgConfig:
     socket_path: str
     encryption: str = "none"
     compression: str = "lz4"
+    archive_name_format: str = "{hostname}-{now:%Y-%m-%dT%H:%M:%S}"
 
 
 @dataclass
@@ -103,6 +104,7 @@ def _parse_borg(data: dict) -> BorgConfig:
         socket_path=_require(section, "socket_path", "borg"),
         encryption=section.get("encryption", "none"),
         compression=section.get("compression", "lz4"),
+        archive_name_format=section.get("archive_name_format", "{hostname}-{now:%Y-%m-%dT%H:%M:%S}"),
     )
 
 

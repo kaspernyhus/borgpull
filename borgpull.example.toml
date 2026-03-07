@@ -9,6 +9,7 @@ repo = "ssh://borgbackup/vps-backups/caprover-django-apps"
 socket_path = "/run/borg/hetzner.sock"
 encryption = "none"                 # only used by `borgpull init`
 compression = "lz4"                 # default: "lz4"
+archive_name_format = "{hostname}-{now:%Y-%m-%dT%H:%M:%S}"  # default
 
 [sources]
 paths = [

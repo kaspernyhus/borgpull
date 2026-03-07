@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import socket
 import subprocess
 from datetime import datetime
 
@@ -11,8 +12,11 @@ log = logging.getLogger("borgpull")
 
 
 def _archive_name(config: Config) -> str:
-    timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-    return f"{config.borg.repo}::{timestamp}"
+    name = config.borg.archive_name_format.format(
+        hostname=socket.gethostname(),
+        now=datetime.now(),
+    )
+    return f"{config.borg.repo}::{name}"
 
 
 def _retention_args(config: Config) -> list[str]:

@@ -1,3 +1,4 @@
+from datetime import datetime
 from unittest.mock import call, patch
 
 import pytest
@@ -11,7 +12,7 @@ from borgpull.config import (
     SourcesConfig,
     SshConfig,
 )
-from borgpull.commands import create, prune, check, init, run_all
+from borgpull.commands import _archive_name, create, prune, check, init, run_all
 
 
 @pytest.fixture()
@@ -38,6 +39,25 @@ def config():
 def config_no_retention(config):
     config.retention = RetentionConfig()
     return config
+
+
+class TestArchiveName:
+    @patch("borgpull.commands.datetime")
+    @patch("borgpull.commands.socket")
+    def test_default_format(self, mock_socket, mock_datetime, config):
+        mock_socket.gethostname.return_value = "proxmox"
+        mock_datetime.now.return_value = datetime(2025, 3, 15, 10, 30, 0)
+        result = _archive_name(config)
+        assert result == "ssh://borgbackup/vps-backups/myapp::proxmox-2025-03-15T10:30:00"
+
+    @patch("borgpull.commands.datetime")
+    @patch("borgpull.commands.socket")
+    def test_custom_format(self, mock_socket, mock_datetime, config):
+        mock_socket.gethostname.return_value = "proxmox"
+        mock_datetime.now.return_value = datetime(2025, 3, 15, 10, 30, 0)
+        config.borg.archive_name_format = "backup-{now:%Y%m%d}"
+        result = _archive_name(config)
+        assert result == "ssh://borgbackup/vps-backups/myapp::backup-20250315"
 
 
 class TestCreate:
