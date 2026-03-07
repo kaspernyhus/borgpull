@@ -1,7 +1,7 @@
 [ssh]
 host = "hetzner"                    # SSH alias or IP address
 user = "root"                       # default: "root"
-# identity_file = "~/.ssh/borgmatic"
+# identity_file = "~/.ssh/borgpull"
 # port = 22
 
 [borg]
