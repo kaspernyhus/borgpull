@@ -74,6 +74,11 @@ When running the full cycle (`borgpull` with no subcommand):
 - **prune fails** — log error, continue to check
 - **check fails** — log error
 
+## Docs
+
+- [SSH and borg serve setup](docs/setup.md) — setting up SSH keys, reverse tunnel, and borg serve on the backup server
+- [Scheduling with systemd](docs/systemd.md) — running borgpull on a timer
+
 ## Development
 
 ```sh
