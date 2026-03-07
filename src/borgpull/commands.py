@@ -46,10 +46,15 @@ def create(config: Config, *, dry_run: bool = False) -> None:
         for hook in config.hooks.before_create:
             run_hook(config, hook, dry_run=dry_run)
 
+        exclude_args = []
+        for pattern in config.sources.exclude:
+            exclude_args += ["--exclude", pattern]
+
         args = [
             "create",
             "--stats",
             "--compression", config.borg.compression,
+            *exclude_args,
             _archive_name(config),
             *config.sources.paths,
         ]

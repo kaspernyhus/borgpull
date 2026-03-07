@@ -29,6 +29,7 @@ class BorgConfig:
 @dataclass
 class SourcesConfig:
     paths: list[str] = field(default_factory=list)
+    exclude: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -115,7 +116,7 @@ def _parse_sources(data: dict) -> SourcesConfig:
     paths = _require(section, "paths", "sources")
     if not isinstance(paths, list) or not paths:
         raise ConfigError("[sources] paths must be a non-empty list")
-    return SourcesConfig(paths=paths)
+    return SourcesConfig(paths=paths, exclude=section.get("exclude", []))
 
 
 def _parse_hooks(data: dict) -> HooksConfig:

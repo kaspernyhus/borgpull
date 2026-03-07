@@ -78,6 +78,18 @@ class TestCreate:
         assert "/data/app" in borg_args
         assert "/data/db" in borg_args
 
+    @patch("borgpull.commands.run_borg")
+    @patch("borgpull.commands.run_hook")
+    def test_passes_exclude_patterns(self, mock_hook, mock_borg, config):
+        config.sources.exclude = ["/data/app/cache", "/data/app/logs"]
+        create(config, dry_run=True)
+        borg_args = mock_borg.call_args[0][1]
+        assert "--exclude" in borg_args
+        idx = borg_args.index("--exclude")
+        assert borg_args[idx + 1] == "/data/app/cache"
+        assert borg_args[idx + 2] == "--exclude"
+        assert borg_args[idx + 3] == "/data/app/logs"
+
     @patch("borgpull.commands.run_borg", side_effect=Exception("borg failed"))
     @patch("borgpull.commands.run_hook")
     def test_runs_after_hooks_even_on_borg_failure(self, mock_hook, mock_borg, config):

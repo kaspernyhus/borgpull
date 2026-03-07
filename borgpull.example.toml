@@ -1,8 +1,8 @@
 [ssh]
 host = "hetzner"                    # SSH alias or IP address
 user = "root"                       # default: "root"
-# identity_file = "~/.ssh/borgpull"
-# port = 22
+identity_file = "~/.ssh/borgpull"
+port = 22
 
 [borg]
 repo = "ssh://borgbackup/vps-backups/caprover-django-apps"
@@ -16,6 +16,9 @@ paths = [
     "/captain/data/config-captain",
     "/captain/data/nginx-shared",
     "/tmp/backup.sqlite3",
+]
+exclude = [
+     "/captain/data/config-captain/cache/",
 ]
 
 [hooks]
