@@ -117,8 +117,8 @@ borgpull -c /path.toml   # explicit config path
 
 When running the full cycle (`borgpull` with no subcommand):
 
-- **before_create hook fails** — abort entirely
-- **borg create fails** — abort, skip after_create hooks
+- **before_create hook fails** — abort, but still run after_create hooks for cleanup
+- **borg create fails** — abort, but still run after_create hooks for cleanup
 - **after_create hook fails** — log warning, continue to prune
 - **prune fails** — log error, continue to check
 - **check fails** — log error

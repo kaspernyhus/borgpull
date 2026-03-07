@@ -1,3 +1,4 @@
+import subprocess
 from datetime import datetime
 from unittest.mock import call, patch
 
@@ -79,10 +80,19 @@ class TestCreate:
 
     @patch("borgpull.commands.run_borg", side_effect=Exception("borg failed"))
     @patch("borgpull.commands.run_hook")
-    def test_skips_after_hooks_on_borg_failure(self, mock_hook, mock_borg, config):
+    def test_runs_after_hooks_even_on_borg_failure(self, mock_hook, mock_borg, config):
         with pytest.raises(Exception, match="borg failed"):
             create(config, dry_run=False)
-        assert mock_hook.call_count == 1  # only before_create
+        assert mock_hook.call_count == 2  # before_create + after_create
+        assert mock_hook.call_args_list[1] == call(config, "echo after", dry_run=False)
+
+    @patch("borgpull.commands.run_borg")
+    @patch("borgpull.commands.run_hook", side_effect=subprocess.CalledProcessError(1, "hook"))
+    def test_runs_after_hooks_even_on_before_hook_failure(self, mock_hook, mock_borg, config):
+        with pytest.raises(subprocess.CalledProcessError):
+            create(config, dry_run=False)
+        mock_borg.assert_not_called()
+        assert mock_hook.call_count == 2  # before_create fails, after_create still runs
 
 
 class TestPrune:

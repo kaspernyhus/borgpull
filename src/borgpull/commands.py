@@ -33,24 +33,29 @@ def _retention_args(config: Config) -> list[str]:
     return args
 
 
-def create(config: Config, *, dry_run: bool = False) -> None:
-    for hook in config.hooks.before_create:
-        run_hook(config, hook, dry_run=dry_run)
-
-    args = [
-        "create",
-        "--stats",
-        "--compression", config.borg.compression,
-        _archive_name(config),
-        *config.sources.paths,
-    ]
-    run_borg(config, args, dry_run=dry_run)
-
+def _run_after_hooks(config: Config, *, dry_run: bool = False) -> None:
     for hook in config.hooks.after_create:
         try:
             run_hook(config, hook, dry_run=dry_run)
         except subprocess.CalledProcessError:
             log.warning("after_create hook failed: %s", hook)
+
+
+def create(config: Config, *, dry_run: bool = False) -> None:
+    try:
+        for hook in config.hooks.before_create:
+            run_hook(config, hook, dry_run=dry_run)
+
+        args = [
+            "create",
+            "--stats",
+            "--compression", config.borg.compression,
+            _archive_name(config),
+            *config.sources.paths,
+        ]
+        run_borg(config, args, dry_run=dry_run)
+    finally:
+        _run_after_hooks(config, dry_run=dry_run)
 
 
 def prune(config: Config, *, dry_run: bool = False) -> None:
