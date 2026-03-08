@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
+import time
 
 from borgpull import __version__
 from borgpull.commands import check, compact, create, info, init, list_archives, prune, run_all
@@ -68,16 +69,33 @@ def main(argv: list[str] | None = None) -> int:
         log.info("config OK")
         return 0
 
+    is_backup = args.command is None
+    if is_backup:
+        log.info("starting backup")
+        start = time.monotonic()
+
     try:
-        if args.command is None:
+        if is_backup:
             run_all(config, dry_run=args.dry_run)
         else:
             COMMANDS[args.command](config, args.dry_run)
     except Exception as e:
-        log.error("%s", e)
+        if is_backup:
+            log.error("backup failed after %s: %s", _format_duration(time.monotonic() - start), e)
+        else:
+            log.error("%s", e)
         return 1
 
+    if is_backup:
+        log.info("backup finished in %s", _format_duration(time.monotonic() - start))
     return 0
+
+
+def _format_duration(seconds: float) -> str:
+    minutes, secs = divmod(int(seconds), 60)
+    if minutes:
+        return f"{minutes}m {secs}s"
+    return f"{secs}s"
 
 
 if __name__ == "__main__":
