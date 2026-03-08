@@ -3,7 +3,7 @@ from unittest.mock import patch
 import pytest
 
 from borgpull.config import BorgConfig, Config, SshConfig, SourcesConfig
-from borgpull.runner import RunError, build_borg_env, build_remote_command, build_ssh_command, run_borg
+from borgpull.runner import RunError, build_borg_env, build_remote_command, build_ssh_command, run_borg, run_local
 
 
 @pytest.fixture()
@@ -90,6 +90,32 @@ class TestRunBorg:
     def test_exit_code_0_succeeds(self, mock_run, config):
         mock_run.return_value.returncode = 0
         run_borg(config, ["create", "repo::archive"])  # no exception
+
+
+class TestRunLocal:
+    def test_dry_run_logs_without_executing(self, caplog):
+        import logging
+        with caplog.at_level(logging.INFO, logger="borgpull"):
+            run_local("echo hello", dry_run=True)
+        assert "dry-run" in caplog.text
+        assert "echo hello" in caplog.text
+
+    @patch("borgpull.runner.subprocess.run")
+    def test_success_does_not_raise(self, mock_run):
+        mock_run.return_value.returncode = 0
+        run_local("echo hello")
+
+    @patch("borgpull.runner.subprocess.run")
+    def test_nonzero_exit_raises_run_error(self, mock_run):
+        mock_run.return_value.returncode = 1
+        with pytest.raises(RunError, match="exit code 1"):
+            run_local("false")
+
+    @patch("borgpull.runner.subprocess.run")
+    def test_runs_with_shell_true(self, mock_run):
+        mock_run.return_value.returncode = 0
+        run_local("echo hello")
+        mock_run.assert_called_once_with("echo hello", shell=True)
 
 
 class TestBuildRemoteCommand:

@@ -215,3 +215,34 @@ class TestConstants:
         )
         with pytest.raises(ConfigError, match="must be strings"):
             load_config(path)
+
+
+NOTIFICATIONS_CONFIG = """\
+[ssh]
+host = "hetzner"
+
+[borg]
+repo = "ssh://borgbackup/vps-backups/myapp"
+socket_path = "/run/borg/hetzner.sock"
+
+[sources]
+paths = ["/data/app"]
+
+[notifications]
+on_success = ["curl -s -d 'backup OK' ntfy.sh/my-topic"]
+on_failure = ["curl -s -d 'backup FAILED' ntfy.sh/my-topic"]
+"""
+
+
+class TestNotificationsConfig:
+    def test_defaults_to_empty_lists(self, minimal_config):
+        cfg = load_config(minimal_config)
+        assert cfg.notifications.on_success == []
+        assert cfg.notifications.on_failure == []
+
+    def test_parses_on_success_and_on_failure(self, tmp_path):
+        path = tmp_path / "borgpull.toml"
+        path.write_text(NOTIFICATIONS_CONFIG)
+        cfg = load_config(path)
+        assert cfg.notifications.on_success == ["curl -s -d 'backup OK' ntfy.sh/my-topic"]
+        assert cfg.notifications.on_failure == ["curl -s -d 'backup FAILED' ntfy.sh/my-topic"]

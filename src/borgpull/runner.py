@@ -82,6 +82,17 @@ def run_borg(
     return result
 
 
+def run_local(command: str, *, dry_run: bool = False) -> None:
+    if dry_run:
+        log.info("dry-run notification: %s", command)
+        return
+
+    log.info("notification: %s", command)
+    result = subprocess.run(command, shell=True)
+    if result.returncode != 0:
+        raise RunError(f"notification command failed (exit code {result.returncode}): {command}")
+
+
 def run_hook(config: Config, command: str, *, dry_run: bool = False) -> None:
     ssh_cmd = build_ssh_command(config)
     full_cmd = ssh_cmd + [command]

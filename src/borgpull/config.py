@@ -52,6 +52,12 @@ class ChecksConfig:
 
 
 @dataclass
+class NotificationsConfig:
+    on_success: list[str] = field(default_factory=list)
+    on_failure: list[str] = field(default_factory=list)
+
+
+@dataclass
 class Config:
     ssh: SshConfig
     borg: BorgConfig
@@ -59,6 +65,7 @@ class Config:
     hooks: HooksConfig = field(default_factory=HooksConfig)
     retention: RetentionConfig = field(default_factory=RetentionConfig)
     checks: ChecksConfig = field(default_factory=ChecksConfig)
+    notifications: NotificationsConfig = field(default_factory=NotificationsConfig)
 
 
 CONFIG_SEARCH_PATHS = [
@@ -162,6 +169,14 @@ def _parse_checks(data: dict) -> ChecksConfig:
     )
 
 
+def _parse_notifications(data: dict) -> NotificationsConfig:
+    section = data.get("notifications", {})
+    return NotificationsConfig(
+        on_success=section.get("on_success", []),
+        on_failure=section.get("on_failure", []),
+    )
+
+
 def load_config(path: Path | None = None) -> Config:
     config_path = Path(path) if path else find_config()
     try:
@@ -189,6 +204,7 @@ def load_config(path: Path | None = None) -> Config:
             hooks=_parse_hooks(data),
             retention=_parse_retention(data),
             checks=_parse_checks(data),
+            notifications=_parse_notifications(data),
         )
     except ConfigError as e:
         raise ConfigError(f"{config_path}: {e}") from None

@@ -39,3 +39,11 @@ keep_monthly = 6
 
 [checks]
 enabled = ["repository"]
+
+[notifications]
+on_failure = [
+    "curl -s -d 'borgpull backup FAILED' ntfy.sh/my-topic",
+]
+on_success = [
+    "curl -s -d 'borgpull backup OK' ntfy.sh/my-topic",
+]

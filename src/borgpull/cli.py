@@ -8,6 +8,7 @@ import time
 from borgpull import __version__
 from borgpull.commands import check, compact, create, info, init, list_archives, prune, run_all
 from borgpull.config import ConfigError, load_config
+from borgpull.runner import RunError, run_local
 
 log = logging.getLogger("borgpull")
 
@@ -82,12 +83,22 @@ def main(argv: list[str] | None = None) -> int:
     except Exception as e:
         if is_backup:
             log.error("backup failed after %s: %s", _format_duration(time.monotonic() - start), e)
+            for cmd in config.notifications.on_failure:
+                try:
+                    run_local(cmd, dry_run=args.dry_run)
+                except RunError:
+                    log.warning("notification failed: %s", cmd)
         else:
             log.error("%s", e)
         return 1
 
     if is_backup:
         log.info("backup finished in %s", _format_duration(time.monotonic() - start))
+        for cmd in config.notifications.on_success:
+            try:
+                run_local(cmd, dry_run=args.dry_run)
+            except RunError:
+                log.warning("notification failed: %s", cmd)
     return 0
 
 
