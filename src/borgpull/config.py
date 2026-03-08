@@ -151,13 +151,19 @@ def load_config(path: Path | None = None) -> Config:
     except FileNotFoundError:
         raise ConfigError(f"Config file not found: {config_path}")
 
-    data = tomllib.loads(raw)
+    try:
+        data = tomllib.loads(raw)
+    except tomllib.TOMLDecodeError as e:
+        raise ConfigError(f"{config_path}: {e}") from None
 
-    return Config(
-        ssh=_parse_ssh(data),
-        borg=_parse_borg(data),
-        sources=_parse_sources(data),
-        hooks=_parse_hooks(data),
-        retention=_parse_retention(data),
-        checks=_parse_checks(data),
-    )
+    try:
+        return Config(
+            ssh=_parse_ssh(data),
+            borg=_parse_borg(data),
+            sources=_parse_sources(data),
+            hooks=_parse_hooks(data),
+            retention=_parse_retention(data),
+            checks=_parse_checks(data),
+        )
+    except ConfigError as e:
+        raise ConfigError(f"{config_path}: {e}") from None

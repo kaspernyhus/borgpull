@@ -37,6 +37,7 @@ def _build_parser() -> argparse.ArgumentParser:
     sub.add_parser("list", help="borg list")
     sub.add_parser("info", help="borg info")
     sub.add_parser("init", help="borg init")
+    sub.add_parser("verify", help="validate config file")
 
     return parser
 
@@ -62,6 +63,10 @@ def main(argv: list[str] | None = None) -> int:
     except ConfigError as e:
         log.error("%s", e)
         return 1
+
+    if args.command == "verify":
+        log.info("config OK")
+        return 0
 
     try:
         if args.command is None:

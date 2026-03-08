@@ -150,3 +150,15 @@ class TestLoadConfigErrors:
         path.write_text(toml_content)
         with pytest.raises(ConfigError, match=expected_error):
             load_config(path)
+
+    def test_invalid_toml_raises_with_file_path(self, tmp_path):
+        path = tmp_path / "broken.toml"
+        path.write_text("[ssh]\nhost = [")
+        with pytest.raises(ConfigError, match="broken.toml"):
+            load_config(path)
+
+    def test_validation_error_includes_file_path(self, tmp_path):
+        path = tmp_path / "myconfig.toml"
+        path.write_text("[ssh]\nhost = 'h'\n[sources]\npaths = ['/a']")
+        with pytest.raises(ConfigError, match="myconfig.toml.*Missing required \\[borg\\] section"):
+            load_config(path)
