@@ -71,9 +71,9 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     is_backup = args.command is None
+    start = time.monotonic()
     if is_backup:
         log.info("starting backup")
-        start = time.monotonic()
 
     try:
         if is_backup:
