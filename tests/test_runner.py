@@ -1,7 +1,9 @@
+from unittest.mock import patch
+
 import pytest
 
 from borgpull.config import BorgConfig, Config, SshConfig, SourcesConfig
-from borgpull.runner import build_borg_env, build_remote_command, build_ssh_command
+from borgpull.runner import RunError, build_borg_env, build_remote_command, build_ssh_command, run_borg
 
 
 @pytest.fixture()
@@ -67,6 +69,27 @@ class TestBuildSshCommand:
         cmd = build_ssh_command(config)
         idx = cmd.index("StreamLocalBindUnlink=yes") - 1
         assert cmd[idx] == "-o"
+
+
+class TestRunBorg:
+    @patch("borgpull.runner.subprocess.run")
+    def test_exit_code_1_logs_warning_and_does_not_raise(self, mock_run, config, caplog):
+        import logging
+        mock_run.return_value.returncode = 1
+        with caplog.at_level(logging.WARNING, logger="borgpull"):
+            run_borg(config, ["create", "repo::archive"])
+        assert "warnings" in caplog.text
+
+    @patch("borgpull.runner.subprocess.run")
+    def test_exit_code_2_raises(self, mock_run, config):
+        mock_run.return_value.returncode = 2
+        with pytest.raises(RunError, match="failed \\(exit code 2\\)"):
+            run_borg(config, ["create", "repo::archive"])
+
+    @patch("borgpull.runner.subprocess.run")
+    def test_exit_code_0_succeeds(self, mock_run, config):
+        mock_run.return_value.returncode = 0
+        run_borg(config, ["create", "repo::archive"])  # no exception
 
 
 class TestBuildRemoteCommand:

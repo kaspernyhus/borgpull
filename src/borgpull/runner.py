@@ -75,7 +75,9 @@ def run_borg(
         stdout=sys.stdout,
         stderr=sys.stderr,
     )
-    if result.returncode != 0:
+    if result.returncode == 1:
+        log.warning("borg %s completed with warnings (exit code 1)", borg_args[0])
+    elif result.returncode > 1:
         raise RunError(f"borg {borg_args[0]} failed (exit code {result.returncode})")
     return result
 
