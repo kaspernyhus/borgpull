@@ -162,3 +162,56 @@ class TestLoadConfigErrors:
         path.write_text("[ssh]\nhost = 'h'\n[sources]\npaths = ['/a']")
         with pytest.raises(ConfigError, match="myconfig.toml.*Missing required \\[borg\\] section"):
             load_config(path)
+
+
+CONSTANTS_CONFIG = """\
+[constants]
+upload = "/mnt/data/upload"
+backup_path = "/mnt/backups"
+
+[ssh]
+host = "hetzner"
+
+[borg]
+repo = "{backup_path}/immich-borg"
+socket_path = "/run/borg/hetzner.sock"
+
+[sources]
+paths = ["{upload}"]
+exclude = ["{upload}/thumbs/", "{upload}/encoded-video/"]
+
+[hooks]
+before_create = ["echo backing up {upload}"]
+"""
+
+
+class TestConstants:
+    def test_substitutes_in_all_string_values(self, tmp_path):
+        path = tmp_path / "borgpull.toml"
+        path.write_text(CONSTANTS_CONFIG)
+        cfg = load_config(path)
+
+        assert cfg.borg.repo == "/mnt/backups/immich-borg"
+        assert cfg.sources.paths == ["/mnt/data/upload"]
+        assert cfg.sources.exclude == ["/mnt/data/upload/thumbs/", "/mnt/data/upload/encoded-video/"]
+        assert cfg.hooks.before_create == ["echo backing up /mnt/data/upload"]
+
+    def test_leaves_non_constant_braces_alone(self, tmp_path):
+        path = tmp_path / "borgpull.toml"
+        path.write_text(CONSTANTS_CONFIG)
+        cfg = load_config(path)
+        assert "{hostname}" in cfg.borg.archive_name_format
+
+    def test_no_constants_section_works(self, minimal_config):
+        cfg = load_config(minimal_config)
+        assert cfg.ssh.host == "hetzner"
+
+    def test_non_string_constant_raises(self, tmp_path):
+        path = tmp_path / "bad.toml"
+        path.write_text(
+            "[constants]\nfoo = 42\n"
+            "[ssh]\nhost = 'h'\n[borg]\nrepo = 'x'\nsocket_path = 'y'\n"
+            "[sources]\npaths = ['/a']"
+        )
+        with pytest.raises(ConfigError, match="must be strings"):
+            load_config(path)

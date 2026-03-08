@@ -78,6 +78,24 @@ def find_config() -> Path:
     )
 
 
+def _apply_constants(data: dict, constants: dict[str, str]) -> dict:
+    if not constants:
+        return data
+
+    def _substitute(value):
+        if isinstance(value, str):
+            for key, replacement in constants.items():
+                value = value.replace(f"{{{key}}}", replacement)
+            return value
+        if isinstance(value, list):
+            return [_substitute(item) for item in value]
+        if isinstance(value, dict):
+            return {k: _substitute(v) for k, v in value.items()}
+        return value
+
+    return _substitute(data)
+
+
 def _require(data: dict, key: str, section: str) -> object:
     if key not in data:
         raise ConfigError(f"Missing required field '{key}' in [{section}]")
@@ -155,6 +173,13 @@ def load_config(path: Path | None = None) -> Config:
         data = tomllib.loads(raw)
     except tomllib.TOMLDecodeError as e:
         raise ConfigError(f"{config_path}: {e}") from None
+
+    constants = data.pop("constants", {})
+    if constants:
+        for key, value in constants.items():
+            if not isinstance(value, str):
+                raise ConfigError(f"{config_path}: [constants] values must be strings, got {type(value).__name__} for '{key}'")
+        data = _apply_constants(data, constants)
 
     try:
         return Config(

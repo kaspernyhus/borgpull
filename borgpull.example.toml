@@ -1,3 +1,6 @@
+[constants]
+captain_data = "/captain/data"
+
 [ssh]
 host = "hetzner"                    # SSH alias or IP address
 user = "root"                       # default: "root"
@@ -13,17 +16,17 @@ archive_name_format = "{hostname}-{now:%Y-%m-%dT%H:%M:%S}"  # default
 
 [sources]
 paths = [
-    "/captain/data/config-captain",
-    "/captain/data/nginx-shared",
+    "{captain_data}/config-captain",
+    "{captain_data}/nginx-shared",
     "/tmp/backup.sqlite3",
 ]
 exclude = [
-     "/captain/data/config-captain/cache/",
+     "{captain_data}/config-captain/cache/",
 ]
 
 [hooks]
 before_create = [
-    "sudo sqlite3 /captain/data/caprover.sqlite3 '.backup /tmp/backup.sqlite3'",
+    "sudo sqlite3 {captain_data}/caprover.sqlite3 '.backup /tmp/backup.sqlite3'",
 ]
 after_create = [
     "sudo rm -f /tmp/backup.sqlite3",
