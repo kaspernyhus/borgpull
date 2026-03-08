@@ -11,6 +11,10 @@ from borgpull.config import Config
 log = logging.getLogger("borgpull")
 
 
+class RunError(Exception):
+    pass
+
+
 def build_borg_env(config: Config) -> dict[str, str]:
     sock = config.borg.socket_path
     return {
@@ -72,7 +76,7 @@ def run_borg(
         stderr=sys.stderr,
     )
     if result.returncode != 0:
-        raise subprocess.CalledProcessError(result.returncode, full_cmd)
+        raise RunError(f"borg {borg_args[0]} failed (exit code {result.returncode})")
     return result
 
 
@@ -92,4 +96,4 @@ def run_hook(config: Config, command: str, *, dry_run: bool = False) -> None:
         stderr=sys.stderr,
     )
     if result.returncode != 0:
-        raise subprocess.CalledProcessError(result.returncode, full_cmd)
+        raise RunError(f"hook failed (exit code {result.returncode}): {command}")

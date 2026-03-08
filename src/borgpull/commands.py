@@ -2,11 +2,10 @@ from __future__ import annotations
 
 import logging
 import socket
-import subprocess
 from datetime import datetime
 
 from borgpull.config import Config
-from borgpull.runner import run_borg, run_hook
+from borgpull.runner import RunError, run_borg, run_hook
 
 log = logging.getLogger("borgpull")
 
@@ -37,7 +36,7 @@ def _run_after_hooks(config: Config, *, dry_run: bool = False) -> None:
     for hook in config.hooks.after_create:
         try:
             run_hook(config, hook, dry_run=dry_run)
-        except subprocess.CalledProcessError:
+        except RunError:
             log.warning("after_create hook failed: %s", hook)
 
 
