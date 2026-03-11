@@ -5,7 +5,7 @@ import socket
 from datetime import datetime
 
 from borgpull.config import Config
-from borgpull.runner import RunError, run_borg, run_hook
+from borgpull.runner import RunError, run_borg, run_hook, run_local
 
 log = logging.getLogger("borgpull")
 
@@ -38,10 +38,17 @@ def _run_after_hooks(config: Config, *, dry_run: bool = False) -> None:
             run_hook(config, hook, dry_run=dry_run)
         except RunError:
             log.warning("after_create hook failed: %s", hook)
+    for hook in config.hooks.local_after:
+        try:
+            run_local(hook, dry_run=dry_run)
+        except RunError:
+            log.warning("local_after hook failed: %s", hook)
 
 
 def create(config: Config, *, dry_run: bool = False) -> None:
     try:
+        for hook in config.hooks.local_before:
+            run_local(hook, dry_run=dry_run)
         for hook in config.hooks.before_create:
             run_hook(config, hook, dry_run=dry_run)
 

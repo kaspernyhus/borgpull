@@ -34,6 +34,8 @@ class SourcesConfig:
 
 @dataclass
 class HooksConfig:
+    local_before: list[str] = field(default_factory=list)
+    local_after: list[str] = field(default_factory=list)
     before_create: list[str] = field(default_factory=list)
     after_create: list[str] = field(default_factory=list)
 
@@ -147,6 +149,8 @@ def _parse_sources(data: dict) -> SourcesConfig:
 def _parse_hooks(data: dict) -> HooksConfig:
     section = data.get("hooks", {})
     return HooksConfig(
+        local_before=section.get("local_before", []),
+        local_after=section.get("local_after", []),
         before_create=section.get("before_create", []),
         after_create=section.get("after_create", []),
     )

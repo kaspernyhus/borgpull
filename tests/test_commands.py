@@ -28,6 +28,8 @@ def config():
         ),
         sources=SourcesConfig(paths=["/data/app", "/data/db"]),
         hooks=HooksConfig(
+            local_before=["echo local_before"],
+            local_after=["echo local_after"],
             before_create=["echo before"],
             after_create=["echo after"],
         ),
@@ -63,12 +65,15 @@ class TestArchiveName:
 
 class TestCreate:
     @patch("borgpull.commands.run_borg")
+    @patch("borgpull.commands.run_local")
     @patch("borgpull.commands.run_hook")
-    def test_runs_hooks_and_borg(self, mock_hook, mock_borg, config):
+    def test_runs_hooks_and_borg(self, mock_hook, mock_local, mock_borg, config):
         create(config, dry_run=True)
 
+        assert mock_local.call_args_list[0] == call("echo local_before", dry_run=True)
         assert mock_hook.call_args_list[0] == call(config, "echo before", dry_run=True)
         assert mock_hook.call_args_list[1] == call(config, "echo after", dry_run=True)
+        assert mock_local.call_args_list[1] == call("echo local_after", dry_run=True)
 
         borg_args = mock_borg.call_args[0][1]
         assert borg_args[0] == "create"
@@ -79,8 +84,9 @@ class TestCreate:
         assert "/data/db" in borg_args
 
     @patch("borgpull.commands.run_borg")
+    @patch("borgpull.commands.run_local")
     @patch("borgpull.commands.run_hook")
-    def test_passes_exclude_patterns(self, mock_hook, mock_borg, config):
+    def test_passes_exclude_patterns(self, mock_hook, mock_local, mock_borg, config):
         config.sources.exclude = ["/data/app/cache", "/data/app/logs"]
         create(config, dry_run=True)
         borg_args = mock_borg.call_args[0][1]
@@ -91,20 +97,34 @@ class TestCreate:
         assert borg_args[idx + 3] == "/data/app/logs"
 
     @patch("borgpull.commands.run_borg", side_effect=Exception("borg failed"))
+    @patch("borgpull.commands.run_local")
     @patch("borgpull.commands.run_hook")
-    def test_runs_after_hooks_even_on_borg_failure(self, mock_hook, mock_borg, config):
+    def test_runs_after_hooks_even_on_borg_failure(self, mock_hook, mock_local, mock_borg, config):
         with pytest.raises(Exception, match="borg failed"):
             create(config, dry_run=False)
         assert mock_hook.call_count == 2  # before_create + after_create
         assert mock_hook.call_args_list[1] == call(config, "echo after", dry_run=False)
+        assert mock_local.call_count == 2  # local_before + local_after
+        assert mock_local.call_args_list[1] == call("echo local_after", dry_run=False)
 
     @patch("borgpull.commands.run_borg")
+    @patch("borgpull.commands.run_local")
     @patch("borgpull.commands.run_hook", side_effect=RunError("hook failed"))
-    def test_runs_after_hooks_even_on_before_hook_failure(self, mock_hook, mock_borg, config):
+    def test_runs_after_hooks_even_on_before_hook_failure(self, mock_hook, mock_local, mock_borg, config):
         with pytest.raises(RunError):
             create(config, dry_run=False)
         mock_borg.assert_not_called()
         assert mock_hook.call_count == 2  # before_create fails, after_create still runs
+
+    @patch("borgpull.commands.run_borg")
+    @patch("borgpull.commands.run_local", side_effect=RunError("local hook failed"))
+    @patch("borgpull.commands.run_hook")
+    def test_aborts_on_local_before_failure(self, mock_hook, mock_local, mock_borg, config):
+        with pytest.raises(RunError, match="local hook failed"):
+            create(config, dry_run=False)
+        mock_borg.assert_not_called()
+        # before_create must not run, but after_create still runs via finally
+        assert mock_hook.call_args_list == [call(config, "echo after", dry_run=False)]
 
 
 class TestPrune:
